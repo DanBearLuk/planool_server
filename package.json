@@ -1,0 +1,21 @@
+{
+  "name": "planool_server",
+  "version": "0.1.0",
+  "description": "planool server",
+  "main": "index.js",
+  "scripts": {
+    "start": "cross-env SERVER_PORT=2700 node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.1",
+    "jose": "^4.14.4",
+    "mongodb": "^5.7.0"
+  }
+}
