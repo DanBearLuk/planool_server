@@ -38,10 +38,28 @@ class Database {
         )
     }
 
-    async findUserRecord(username) {
-        return this.usersCollection.findOne({
-            username
-        });
+    async findUserRecord(username, userId) {
+        if (!username && !userId) {
+            throw new Error('Incorrect arguments');
+        }
+
+        let record;
+        
+        if (username) {
+            record = await this.usersCollection.findOne({
+                username: username.toString()
+            });
+        } else {
+            record = await this.usersCollection.findOne({
+                id: +userId
+            });
+        }
+
+        if (record) {
+            delete record._id;
+        }
+
+        return record;
     }
 
     async addUserRecord(username, password) {
