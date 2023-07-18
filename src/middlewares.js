@@ -29,7 +29,6 @@ function attachUser(db) {
                 });
             }
 
-            delete record.password;
             req.user = record;
 
             next();

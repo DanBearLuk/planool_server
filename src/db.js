@@ -2,7 +2,8 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 const bcrypt = require('bcrypt');
 
 const Counters = {
-    USERS: 'users'
+    USERS: 'users',
+    PLANS: 'plans'
 };
 
 class Database {
@@ -18,6 +19,7 @@ class Database {
         });
 
         this.usersCollection = this._client.db('planool').collection('users');
+        this.plansCollection = this._client.db('planool').collection('plans');
         this.countersCollection = this._client.db('planool').collection('counters');
     }
 
@@ -31,11 +33,15 @@ class Database {
     }
 
     async getNewId(counterType) {
+        if (!Counters[counterType.toUpperCase()]) {
+            throw new Error('Unknown type');
+        }
+
         return this.countersCollection.findOneAndUpdate(
             { type: counterType },
             { $inc: { seq_value: 1 }}, 
             { returnDocument: 'after' }
-        )
+        );
     }
 
     async findUserRecord(username, userId) {
@@ -62,6 +68,12 @@ class Database {
         return record;
     }
 
+    async findPlanRecord(planId) {
+        return this.plansCollection.findOne({
+            id: +planId
+        });
+    }
+
     async addUserRecord(username, password) {
         const isTaken = await this.findUserRecord(username) !== null;
 
@@ -73,6 +85,7 @@ class Database {
         const user = {
             id: newId,
             username,
+            password: hashedPassword,
             avatarUrl: '',
             firstName: '',
             secondName: '',
@@ -83,12 +96,34 @@ class Database {
             favoritePlans: [],
             isFavoritesVisible: true
         };
-        const record = await this.usersCollection.insertOne({
-            ...user,
-            password: hashedPassword
-        });
+        const record = await this.usersCollection.insertOne(user);
 
         return user;
+    }
+
+    async updateUserRecord(id, info) {
+        if (info.username) {
+            const isTaken = await this.findUserRecord(info.username) !== null;
+
+            if (isTaken) throw new Error('Username is already taken');
+        }
+
+        if (info.password) {
+            info.password = await bcrypt.hash(info.password, 10);
+        }
+
+        const record = (await this.usersCollection.findOneAndUpdate(
+            { id },
+            { $set: info },
+            { returnDocument: 'after' }
+        )).value;
+
+        if (!record) {
+            throw new Error('User not found');
+        }
+
+        delete record._id;
+        return record;
     }
 }
 

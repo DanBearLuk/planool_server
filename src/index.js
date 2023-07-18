@@ -2,6 +2,8 @@ const Config = require('../config').default;
 const Database = require('./db').default;
 const validator = require('./validate');
 const reg_cleanup = require('./cleanup').reg_cleanup;
+const { createJWT } = require('./jwt');
+const { attachUser } = require('./middlewares');
 
 const express = require('express');
 const cors = require('cors');
@@ -9,7 +11,6 @@ const rateLimiter = require('express-rate-limit');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
-const { createJWT, verifyJWT } = require('./jwt');
 
 const corsOptions = {
     origin: Config.CLIENT_URL,
@@ -55,7 +56,7 @@ app.post('/api/users/register', async (req, res) => {
     const username = req.body.username.toString();
     const password = req.body.password.toString();
 
-    if (!validator.validateAuthInfo(username, password)) {
+    if (!validator.validateUserInfo({ username, password })) {
         return res.status(401).json({
             message: 'Invalid username or password'
         });   
@@ -64,6 +65,7 @@ app.post('/api/users/register', async (req, res) => {
     try {
         const record = await db.addUserRecord(username, password);
 
+        delete record.password;
         return res.status(200).json({
             user: record
         });
@@ -94,7 +96,7 @@ app.post('/api/users/login', async (req, res) => {
     const username = req.body.username.toString();
     const password = req.body.password.toString();
 
-    if (!validator.validateAuthInfo(username, password)) {
+    if (!validator.validateUserInfo({ username, password })) {
         return res.status(401).json({
             message: 'Invalid username or password'
         });   
@@ -134,47 +136,107 @@ app.post('/api/users/login', async (req, res) => {
     }
 });
 
-
 //app.use('/api/users/relogin', limit(30 * 1000, 5));
+app.use('/api/users/relogin', attachUser(db));
 app.get('/api/users/relogin', async (req, res) => {
-    const token = req.cookies.token;
+    try {
+        const token = await createJWT({ 
+            id: req.user.id
+        }, '168h');
 
-    if (!token) {
-        return res.status(401).json({
-            message: 'Token not found'
-        });       
+        delete req.user.password;
+
+        res.cookie('token', token, { maxAge: 2592000000, httpOnly: true });
+        return res.status(200).json({
+            user: req.user
+        });
+    } catch (e) {
+        console.error(e);
+
+        return res.status(500).json({
+            message: 'Internal error'
+        });
+    }
+});
+
+//app.use('/api/users/isUsernameAvailable', limit(2 * 60 * 1000, 1));
+app.use('/api/users/isUsernameAvailable', bodyParser.json());
+app.post('/api/users/isUsernameAvailable', async (req, res) => {
+    if (!req.body || !req.body.username) {
+        return res.status(400).json({
+          message: 'Bad request'
+        });
     }
 
-    let userId;
-
-    try {
-        userId = (await verifyJWT(token)).id;
-    } catch {
-        return res.status(401).json({
-            message: 'Token expired'
-        });  
+    if (!validator.validateUserInfo({ username: req.body.username })) {
+        return res.status(400).json({
+            message: 'Invalid username'
+        });
     }
 
     try {
-        const record = await db.findUserRecord(null, userId);
+        const result = await db.findUserRecord(req.body.username);
 
-        if (!record) {
+        return res.status(200).json({
+            isAvailable: !result
+        });
+    } catch (e) {
+        console.error(e);
+
+        return res.status(500).json({
+            message: 'Internal error'
+        });          
+    }
+});
+
+//app.use('/api/users/updateInfo', limit(5 * 60 * 1000, 1));
+app.use('/api/users/updateInfo', attachUser(db));
+app.use('/api/users/updateInfo', bodyParser.json());
+app.post('/api/users/updateInfo', async (req, res) => {
+    if (!req.body || !req.body.new) {
+        return res.status(400).json({
+          message: 'Bad request'
+        });
+    }
+
+    if (!validator.validateUserInfo(req.body.new)) {
+        return res.status(400).json({
+            message: 'Invalid user info'
+        });
+    }
+
+    if (req.body.new.password) {
+        if (!req.body.old || !req.body.old.password || typeof(req.body.old.password) !== 'string') {
             return res.status(401).json({
-                message: 'User not found'
+              message: 'Old password is missing'
             });
         }
 
+        if (!await bcrypt.compare(req.body.old.password, req.user.password)) {
+            return res.status(401).json({
+                message: 'Old password is incorrect'
+            });            
+        }
+    }
+
+    try {
+        const record = await db.updateUserRecord(req.user.id, req.body.new);
+
         delete record.password;
-
-        const token = await createJWT({ 
-            id: userId
-        }, '168h');
-
-        res.cookie('token', token, { maxAge: 2592000000, httpOnly: true });
         return res.status(200).json({
             user: record
         });
     } catch (e) {
+        if (e.message === 'Username is already taken') {
+            return res.status(409).json({
+                message: 'Username is already taken'
+            });  
+        } else if (e.message === 'User not found') {
+            return res.status(409).json({
+                message: 'User not found'
+            });  
+        }
+
         console.error(e);
 
         return res.status(500).json({
@@ -182,6 +244,7 @@ app.get('/api/users/relogin', async (req, res) => {
         });  
     }
 });
+
 
 
 app.listen(Config.SERVER_PORT);
