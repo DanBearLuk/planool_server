@@ -1,13 +1,12 @@
 const { verifyJWT } = require('./jwt');
+const ers = require('./errorHandlers');
 
 function attachUser(db) {
     return async (req, res, next) => {
         const token = req.cookies.token;
 
         if (!token) {
-            return res.status(401).json({
-                message: 'Token not found'
-            });       
+            return ers.handleForbiddenError(res, 'Token not found');
         }
 
         let userId;
@@ -15,29 +14,21 @@ function attachUser(db) {
         try {
             userId = (await verifyJWT(token)).id;
         } catch {
-            return res.status(401).json({
-                message: 'Token expired'
-            });  
+            return ers.handleForbiddenError(res, 'Token expired');
         }
 
         try {
             const record = await db.findUserRecord(null, userId);
 
             if (!record) {
-                return res.status(401).json({
-                    message: 'User not found'
-                });
+                return ers.handleForbiddenError(res, 'User not found');
             }
 
             req.user = record;
 
             next();
         } catch (e) {
-            console.error(e);
-
-            return res.status(500).json({
-                message: 'Internal error'
-            });  
+            return ers.handleInternalError(res, e);
         }
     }
 }
@@ -50,20 +41,14 @@ function attachPlan(db) {
             const record = await db.findPlanRecord(planId);
 
             if (!record) {
-                return res.status(404).json({
-                    message: 'Plan not found'
-                });
+                return ers.handleNotFoundError(res, 'Plan not found');
             }
 
             req.plan = record;
 
             next();
         } catch (e) {
-            console.error(e);
-
-            return res.status(500).json({
-                message: 'Internal error'
-            });  
+            return ers.handleInternalError(res, e);  
         }
     }
 }
@@ -85,9 +70,7 @@ function checkAccess(isCreator = true) {
         if (!isCreator && req.plan.editors.includes(req.user.id)) {
             next();
         } else {
-            return res.status(401).json({
-                message: 'Access denied'
-            })
+            return ers.handleForbiddenError(res, 'Access denied');
         }
     }
 }

@@ -49,14 +49,14 @@ db.run().then(() => {
 app.use('/api/users/register', bodyParser.json());
 app.post('/api/users/register', async (req, res) => {
     if (!req.body || !req.body.username || !req.body.password) {
-        ers.handleBadRequestError(res);
+        return ers.handleBadRequestError(res);
     }
 
     const username = req.body.username.toString();
     const password = req.body.password.toString();
 
     if (!validator.validateUserInfo({ username, password })) {
-        ers.handleForbiddenError(res, 'Invalid username or password');
+        return ers.handleForbiddenError(res, 'Invalid username or password');
     }
 
     try {
@@ -68,10 +68,10 @@ app.post('/api/users/register', async (req, res) => {
         });
     } catch (e) {
         if (e.message === 'User already exists') {
-            ers.handleConflictError(res, e.message);
+            return ers.handleConflictError(res, e.message);
         }
 
-        ers.handleInternalError(res, e);
+        return ers.handleInternalError(res, e);
     }
 });
 
@@ -79,25 +79,25 @@ app.post('/api/users/register', async (req, res) => {
 app.use('/api/users/login', bodyParser.json());
 app.post('/api/users/login', async (req, res) => {
     if (!req.body || !req.body.username || !req.body.password) {
-        ers.handleBadRequestError(res);
+        return ers.handleBadRequestError(res);
     }
 
     const username = req.body.username;
     const password = req.body.password;
 
     if (!validator.validateUserInfo({ username, password })) {
-        ers.handleForbiddenError(res, 'Invalid username or password');
+        return ers.handleForbiddenError(res, 'Invalid username or password');
     }
 
     try {
         const record = await db.findUserRecord(username);
 
         if (!record) {
-            ers.handleForbiddenError(res, 'Username is incorrect');
+            return ers.handleForbiddenError(res, 'Username is incorrect');
         }
 
         if (!await bcrypt.compare(password, record.password)) {
-            ers.handleForbiddenError(res, 'Password is incorrect');
+            return ers.handleForbiddenError(res, 'Password is incorrect');
         }
 
         delete record.password;
@@ -111,7 +111,7 @@ app.post('/api/users/login', async (req, res) => {
             user: record
         });
     } catch (e) {
-        ers.handleInternalError(res, e);
+        return ers.handleInternalError(res, e);
     }
 });
 
@@ -130,7 +130,7 @@ app.get('/api/users/relogin', async (req, res) => {
             user: req.user
         });
     } catch (e) {
-        ers.handleInternalError(res, e);
+        return ers.handleInternalError(res, e);
     }
 });
 
@@ -138,11 +138,11 @@ app.get('/api/users/relogin', async (req, res) => {
 app.use('/api/users/isUsernameAvailable', bodyParser.json());
 app.post('/api/users/isUsernameAvailable', async (req, res) => {
     if (!req.body || !req.body.username) {
-        ers.handleBadRequestError(res);
+        return ers.handleBadRequestError(res);
     }
 
     if (!validator.validateUserInfo({ username: req.body.username })) {
-        ers.handleBadRequestError(res, 'Invalid username');
+        return ers.handleBadRequestError(res, 'Invalid username');
     }
 
     try {
@@ -152,29 +152,29 @@ app.post('/api/users/isUsernameAvailable', async (req, res) => {
             isAvailable: !result
         });
     } catch (e) {
-        ers.handleInternalError(res, e);       
+        return ers.handleInternalError(res, e);       
     }
 });
 
 //app.use('/api/users/updateInfo', limit(5 * 60 * 1000, 1));
 app.use('/api/users/updateInfo', attachUser(db));
 app.use('/api/users/updateInfo', bodyParser.json());
-app.post('/api/users/updateInfo', async (req, res) => {
+app.put('/api/users/updateInfo', async (req, res) => {
     if (!req.body || !req.body.new) {
-        ers.handleBadRequestError(res);
+        return ers.handleBadRequestError(res);
     }
 
     if (!validator.validateUserInfo(req.body.new)) {
-        ers.handleBadRequestError('Invalid user info');
+        return ers.handleBadRequestError('Invalid user info');
     }
 
     if (req.body.new.password) {
         if (!req.body.old || !req.body.old.password || typeof(req.body.old.password) !== 'string') {
-            ers.handleForbiddenError('Old password is missing');
+            return ers.handleForbiddenError('Old password is missing');
         }
 
         if (!await bcrypt.compare(req.body.old.password, req.user.password)) {
-            ers.handleForbiddenError('Old password is incorrect');
+            return ers.handleForbiddenError('Old password is incorrect');
         }
     }
 
@@ -190,10 +190,10 @@ app.post('/api/users/updateInfo', async (req, res) => {
             e.message === 'Username is already taken' ||
             e.message === 'User not found'
         ) {
-            ers.handleConflictError(e.message);
+            return ers.handleConflictError(e.message);
         }
 
-        ers.handleInternalError(res, e);
+        return ers.handleInternalError(res, e);
     }
 });
 
