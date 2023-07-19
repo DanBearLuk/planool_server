@@ -2,6 +2,7 @@ const Config = require('../config').default;
 const Database = require('./db').default;
 const validator = require('./validate');
 const reg_cleanup = require('./cleanup').reg_cleanup;
+const ers = require('./errorHandlers');
 const { createJWT } = require('./jwt');
 const { attachUser } = require('./middlewares');
 
@@ -48,18 +49,14 @@ db.run().then(() => {
 app.use('/api/users/register', bodyParser.json());
 app.post('/api/users/register', async (req, res) => {
     if (!req.body || !req.body.username || !req.body.password) {
-        return res.status(400).json({
-          message: 'Bad request'
-        });
+        ers.handleBadRequestError(res);
     }
 
     const username = req.body.username.toString();
     const password = req.body.password.toString();
 
     if (!validator.validateUserInfo({ username, password })) {
-        return res.status(401).json({
-            message: 'Invalid username or password'
-        });   
+        ers.handleForbiddenError(res, 'Invalid username or password');
     }
 
     try {
@@ -71,16 +68,10 @@ app.post('/api/users/register', async (req, res) => {
         });
     } catch (e) {
         if (e.message === 'User already exists') {
-            return res.status(409).json({
-                message: 'User already exists'
-            });  
+            ers.handleConflictError(res, e.message);
         }
 
-        console.error(e);
-
-        return res.status(500).json({
-            message: 'Internal error'
-        });  
+        ers.handleInternalError(res, e);
     }
 });
 
@@ -88,33 +79,25 @@ app.post('/api/users/register', async (req, res) => {
 app.use('/api/users/login', bodyParser.json());
 app.post('/api/users/login', async (req, res) => {
     if (!req.body || !req.body.username || !req.body.password) {
-        return res.status(400).json({
-          message: 'Bad request'
-        });
+        ers.handleBadRequestError(res);
     }
 
-    const username = req.body.username.toString();
-    const password = req.body.password.toString();
+    const username = req.body.username;
+    const password = req.body.password;
 
     if (!validator.validateUserInfo({ username, password })) {
-        return res.status(401).json({
-            message: 'Invalid username or password'
-        });   
+        ers.handleForbiddenError(res, 'Invalid username or password');
     }
 
     try {
         const record = await db.findUserRecord(username);
 
         if (!record) {
-            return res.status(401).json({
-                message: 'User not found'
-            });
+            ers.handleForbiddenError(res, 'Username is incorrect');
         }
 
         if (!await bcrypt.compare(password, record.password)) {
-            return res.status(401).json({
-                message: 'Password is incorrect'
-            });            
+            ers.handleForbiddenError(res, 'Password is incorrect');
         }
 
         delete record.password;
@@ -128,11 +111,7 @@ app.post('/api/users/login', async (req, res) => {
             user: record
         });
     } catch (e) {
-        console.error(e);
-
-        return res.status(500).json({
-            message: 'Internal error'
-        });  
+        ers.handleInternalError(res, e);
     }
 });
 
@@ -151,11 +130,7 @@ app.get('/api/users/relogin', async (req, res) => {
             user: req.user
         });
     } catch (e) {
-        console.error(e);
-
-        return res.status(500).json({
-            message: 'Internal error'
-        });
+        ers.handleInternalError(res, e);
     }
 });
 
@@ -163,15 +138,11 @@ app.get('/api/users/relogin', async (req, res) => {
 app.use('/api/users/isUsernameAvailable', bodyParser.json());
 app.post('/api/users/isUsernameAvailable', async (req, res) => {
     if (!req.body || !req.body.username) {
-        return res.status(400).json({
-          message: 'Bad request'
-        });
+        ers.handleBadRequestError(res);
     }
 
     if (!validator.validateUserInfo({ username: req.body.username })) {
-        return res.status(400).json({
-            message: 'Invalid username'
-        });
+        ers.handleBadRequestError(res, 'Invalid username');
     }
 
     try {
@@ -181,11 +152,7 @@ app.post('/api/users/isUsernameAvailable', async (req, res) => {
             isAvailable: !result
         });
     } catch (e) {
-        console.error(e);
-
-        return res.status(500).json({
-            message: 'Internal error'
-        });          
+        ers.handleInternalError(res, e);       
     }
 });
 
@@ -194,28 +161,20 @@ app.use('/api/users/updateInfo', attachUser(db));
 app.use('/api/users/updateInfo', bodyParser.json());
 app.post('/api/users/updateInfo', async (req, res) => {
     if (!req.body || !req.body.new) {
-        return res.status(400).json({
-          message: 'Bad request'
-        });
+        ers.handleBadRequestError(res);
     }
 
     if (!validator.validateUserInfo(req.body.new)) {
-        return res.status(400).json({
-            message: 'Invalid user info'
-        });
+        ers.handleBadRequestError('Invalid user info');
     }
 
     if (req.body.new.password) {
         if (!req.body.old || !req.body.old.password || typeof(req.body.old.password) !== 'string') {
-            return res.status(401).json({
-              message: 'Old password is missing'
-            });
+            ers.handleForbiddenError('Old password is missing');
         }
 
         if (!await bcrypt.compare(req.body.old.password, req.user.password)) {
-            return res.status(401).json({
-                message: 'Old password is incorrect'
-            });            
+            ers.handleForbiddenError('Old password is incorrect');
         }
     }
 
@@ -227,25 +186,16 @@ app.post('/api/users/updateInfo', async (req, res) => {
             user: record
         });
     } catch (e) {
-        if (e.message === 'Username is already taken') {
-            return res.status(409).json({
-                message: 'Username is already taken'
-            });  
-        } else if (e.message === 'User not found') {
-            return res.status(409).json({
-                message: 'User not found'
-            });  
+        if (
+            e.message === 'Username is already taken' ||
+            e.message === 'User not found'
+        ) {
+            ers.handleConflictError(e.message);
         }
 
-        console.error(e);
-
-        return res.status(500).json({
-            message: 'Internal error'
-        });  
+        ers.handleInternalError(res, e);
     }
 });
-
-
 
 app.listen(Config.SERVER_PORT);
 console.log('Server started');

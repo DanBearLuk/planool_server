@@ -53,11 +53,11 @@ class Database {
         
         if (username) {
             record = await this.usersCollection.findOne({
-                username: username.toString()
+                username: username
             });
         } else {
             record = await this.usersCollection.findOne({
-                id: +userId
+                id: userId
             });
         }
 
@@ -70,7 +70,7 @@ class Database {
 
     async findPlanRecord(planId) {
         return this.plansCollection.findOne({
-            id: +planId
+            id: planId
         });
     }
 
@@ -96,7 +96,8 @@ class Database {
             favoritePlans: [],
             isFavoritesVisible: true
         };
-        const record = await this.usersCollection.insertOne(user);
+        
+        await this.usersCollection.insertOne(user);
 
         return user;
     }
