@@ -9,4 +9,4 @@ const Config = {
     }
 };
 
-module.exports = { default: Config };
+module.exports = Config;

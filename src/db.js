@@ -1,5 +1,7 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const Config = require('../config');
+const regCleanup = require('./cleanup');
 const bcrypt = require('bcrypt');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const Counters = {
     USERS: 'users',
@@ -68,12 +70,6 @@ class Database {
         return record;
     }
 
-    async findPlanRecord(planId) {
-        return this.plansCollection.findOne({
-            id: planId
-        });
-    }
-
     async addUserRecord(username, password) {
         const isTaken = await this.findUserRecord(username) !== null;
 
@@ -126,8 +122,25 @@ class Database {
         delete record._id;
         return record;
     }
+
+    async findPlanRecord(planId) {
+        return this.plansCollection.findOne({
+            id: planId
+        });
+    }
 }
 
-module.exports = {
-    default: Database
-};
+const db = new Database(Config.DB.ADDRESS, Config.DB.USERNAME, Config.DB.PASSWORD);
+
+db.run().then(() => {
+    console.log('MongoDB connected');
+
+    regCleanup(db);
+}).catch(e => {
+    db.close();
+
+    console.error('MongoDB connection error');
+    console.dir(e);
+});
+
+module.exports = db;
