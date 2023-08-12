@@ -21,16 +21,20 @@ const limit = (period, amount) => rateLimiter({
 //router.use('/register', limit(3 * 60 * 1000, 5));
 router.use('/register', bodyParser.json());
 router.post('/register', async (req, res) => {
-    if (!req.body || !req.body.username || !req.body.password) {
+    const body = req.body;
+
+    if (!body || !body.username || !body.password) {
         return ers.handleBadRequestError(res);
     }
 
-    if (!validator.validateUserInfo(req.body)) {
-        return ers.handleForbiddenError(res, 'Invalid username or password');
+    try {
+        validator.validateUserInfo(body)
+    } catch (e) {
+        return ers.handleForbiddenError(res, e.message);
     }
 
     try {
-        const record = await db.addUserRecord(req.body.username, req.body.password);
+        const record = await db.addUserRecord(body.username, body.password);
 
         delete record.password;
         return res.status(200).json({
@@ -48,22 +52,26 @@ router.post('/register', async (req, res) => {
 //router.use('/login', limit(3 * 60 * 1000, 5));
 router.use('/login', bodyParser.json());
 router.post('/login', async (req, res) => {
-    if (!req.body || !req.body.username || !req.body.password) {
+    const body = req.body;
+
+    if (!body || !body.username || !body.password) {
         return ers.handleBadRequestError(res);
     }
 
-    if (!validator.validateUserInfo(req.body)) {
-        return ers.handleForbiddenError(res, 'Invalid username or password');
+    try {
+        validator.validateUserInfo(body)
+    } catch (e) {
+        return ers.handleForbiddenError(res, e.message);
     }
 
     try {
-        const record = await db.findUserRecord(req.body.username);
+        const record = await db.findUserRecord(body.username);
 
         if (!record) {
             return ers.handleForbiddenError(res, 'Username is incorrect');
         }
 
-        if (!await bcrypt.compare(req.body.password, record.password)) {
+        if (!await bcrypt.compare(body.password, record.password)) {
             return ers.handleForbiddenError(res, 'Password is incorrect');
         }
 
@@ -104,16 +112,20 @@ router.get('/relogin', async (req, res) => {
 //router.use('/isUsernameAvailable', limit(2 * 60 * 1000, 1));
 router.use('/isUsernameAvailable', bodyParser.json());
 router.post('/isUsernameAvailable', async (req, res) => {
-    if (!req.body || !req.body.username) {
+    const body = req.body;
+
+    if (!body || !body.username) {
         return ers.handleBadRequestError(res);
     }
 
-    if (!validator.validateUserInfo({ username: req.body.username })) {
-        return ers.handleBadRequestError(res, 'Invalid username');
+    try {
+        validator.validateUserInfo({ username: body.username })
+    } catch (e) {
+        return ers.handleBadRequestError(res, e.message);
     }
 
     try {
-        const result = await db.findUserRecord(req.body.username);
+        const result = await db.findUserRecord(body.username);
 
         return res.status(200).json({
             isAvailable: !result
@@ -127,26 +139,30 @@ router.post('/isUsernameAvailable', async (req, res) => {
 router.use('/updateInfo', attachUser(db));
 router.use('/updateInfo', bodyParser.json());
 router.put('/updateInfo', async (req, res) => {
-    if (!req.body || !req.body.new) {
+    const body = req.body;
+
+    if (!body || !body.new) {
         return ers.handleBadRequestError(res);
     }
 
-    if (!validator.validateUserInfo(req.body.new)) {
-        return ers.handleBadRequestError('Invalid user info');
+    try {
+        validator.validateUserInfo(body.new)
+    } catch (e) {
+        return ers.handleBadRequestError(res, e.message);
     }
 
-    if (req.body.new.password) {
-        if (!req.body.old || !req.body.old.password || typeof(req.body.old.password) !== 'string') {
+    if (body.new.password) {
+        if (!body.old || !body.old.password || typeof(body.old.password) !== 'string') {
             return ers.handleForbiddenError('Old password is missing');
         }
 
-        if (!await bcrypt.compare(req.body.old.password, req.user.password)) {
+        if (!await bcrypt.compare(body.old.password, req.user.password)) {
             return ers.handleForbiddenError('Old password is incorrect');
         }
     }
 
     try {
-        const record = await db.updateUserRecord(req.user.id, req.body.new);
+        const record = await db.updateUserRecord(req.user.id, { set: body.new });
 
         delete record.password;
         return res.status(200).json({

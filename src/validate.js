@@ -1,129 +1,195 @@
 const validator = require('validator');
 
-function validateUserInfo(userInfo) {
-    let validateResult = true;
+function isAllowedKeys(obj, keys) {
+    return Object.keys(obj).every(k => keys.includes(k));
+}
 
+function isTrimmable(str) {
+    return str.trim().length !== str.length;
+}
+
+function checkRequiredFields(body, fields) {
+    return fields.every(f => Object.keys(body).includes(f));
+}
+
+function validateUserInfo(userInfo) {
     const allowedFields = [
         'username', 'password', 'firstName', 
         'secondName', 'info', 'age', 
         'isFavoritesVisible'
     ];
 
-    if (!Object.keys(userInfo).every(k => allowedFields.includes(k))) {
-        return false;
+    if (!isAllowedKeys(userInfo, allowedFields)) {
+        throw new Error('Invalid parameters');
     }
 
     if (userInfo.username) {
-        validateResult = validateResult &&
+        const check =
             typeof(userInfo.username) === 'string' &&
             validator.isAlphanumeric(userInfo.username, 'en-US', { ignore: ' -_' }) && 
+            !isTrimmable(userInfo.username) &&
             validator.isLength(userInfo.username, { min: 3, max: 16 });
+        
+        if (!check) {
+            throw new Error('Invalid username');
+        }
     }
 
     if (userInfo.password) {
-        validateResult = validateResult &&
+        const check =
             typeof(userInfo.password) === 'string' &&
             validator.isStrongPassword(userInfo.password) &&
+            !isTrimmable(userInfo.password) &&
             validator.isLength(userInfo.password, { min: 8, max: 24 });
+        
+        if (!check) {
+            throw new Error('Invalid password');
+        }
     }
 
     if (userInfo.firstName) {
-        validateResult = validateResult &&
+        const check =
             typeof(userInfo.firstName) === 'string' &&
             validator.isAlpha(userInfo.firstName, 'en-US', { ignore: ' -'}) &&
+            !isTrimmable(userInfo.firstName) &&
             validator.isLength(userInfo.firstName, { min: 1, max: 36 });
+        
+        if (!check) {
+            throw new Error('Invalid firstname');
+        }
     }
 
     if (userInfo.secondName) {
-        validateResult = validateResult &&
+        const check =
             typeof(userInfo.secondName) === 'string' &&
             validator.isAlpha(userInfo.secondName, 'en-US', { ignore: ' -'}) &&
+            !isTrimmable(userInfo.secondName) &&
             validator.isLength(userInfo.secondName, { min: 1, max: 36 });
+        
+        if (!check) {
+            throw new Error('Invalid secondname');
+        }
     }
 
     if (userInfo.info) {
-        validateResult = validateResult &&
+        const check =
             typeof(userInfo.info) === 'string' &&
             validator.isLength(userInfo.info, { min: 1, max: 1000 });
+        
+        if (!check) {
+            throw new Error('Invalid info');
+        }
     }
 
     if (userInfo.age) {
-        validateResult = validateResult &&
+        const check =
             Number.isInteger(userInfo.age) &&
             userInfo.age > 0 &&
             userInfo.age < 150;
+        
+        if (!check) {
+            throw new Error('Invalid age');
+        }
     }
 
     if (userInfo.isFavoritesVisible) {
-        validateResult = validateResult &&
+        const check =
             typeof(userInfo.isFavoritesVisible) === 'boolean';
+        
+        if (!check) {
+            throw new Error('Invalid favorites visibility');
+        }
     }
-
-    return validateResult;
 }
 
 function validatePlanInfo(planInfo) {
-    let validateResult = true;
-
     const allowedFields = [
-        'username', 'password', 'firstName', 
-        'secondName', 'info', 'age', 
-        'isFavoritesVisible'
+        'title', 'visibility', 'type',
+        'venue', 'isOnlyApproved'
     ];
 
-    if (!Object.keys(userInfo).every(k => allowedFields.includes(k))) {
-        return false;
+    const venueAllowedFields = [
+        'gameTitle', 'country', 'place'
+    ];
+
+    const visibilityTypes = [
+        'private', 'public', 'friends'
+    ];
+
+    const types = [
+        'worldtravel', 'countrytravel', 
+        'game', 'tour', 'indoorparty',
+        'outdoorparty', 'virtualparty'
+    ];
+
+    if (!isAllowedKeys(planInfo, allowedFields)) {
+        throw new Error('Invalid parameters');
+    }
+    
+    if (planInfo.venue && !isAllowedKeys(planInfo.venue, venueAllowedFields)) {
+        throw new Error('Invalid parameters');
     }
 
-    if (userInfo.username) {
-        validateResult = validateResult &&
-            typeof(userInfo.username) === 'string' &&
-            validator.isAlphanumeric(userInfo.username, 'en-US', { ignore: ' -_' }) && 
-            validator.isLength(userInfo.username, { min: 3, max: 16 });
+    if (planInfo.title) {
+        const check =
+            typeof(planInfo.title) === 'string' && 
+            !isTrimmable(planInfo.title) &&
+            validator.isLength(planInfo.title, { min: 3, max: 64 });
+        
+        if (!check) {
+            throw new Error('Invalid title');
+        }
     }
 
-    if (userInfo.password) {
-        validateResult = validateResult &&
-            typeof(userInfo.password) === 'string' &&
-            validator.isStrongPassword(userInfo.password) &&
-            validator.isLength(userInfo.password, { min: 8, max: 24 });
+    if (planInfo.visibility) {
+        const check =
+            typeof(planInfo.visibility) === 'string' &&
+            validator.isIn(planInfo.visibility.toLowerCase(), visibilityTypes);
+        
+        if (!check) {
+            throw new Error('Invalid visibility');
+        }
     }
 
-    if (userInfo.firstName) {
-        validateResult = validateResult &&
-            typeof(userInfo.firstName) === 'string' &&
-            validator.isAlpha(userInfo.firstName, 'en-US', { ignore: ' -'}) &&
-            validator.isLength(userInfo.firstName, { min: 1, max: 36 });
+    if (planInfo.isOnlyApproved) {
+        const check =
+            typeof(planInfo.isOnlyApproved) === 'boolean';
+        
+        if (!check) {
+            throw new Error('Invalid value for only approved field');
+        }
     }
 
-    if (userInfo.secondName) {
-        validateResult = validateResult &&
-            typeof(userInfo.secondName) === 'string' &&
-            validator.isAlpha(userInfo.secondName, 'en-US', { ignore: ' -'}) &&
-            validator.isLength(userInfo.secondName, { min: 1, max: 36 });
-    }
+    if (planInfo.type) {
+        let check =
+            typeof(planInfo.type) === 'string' &&
+            validator.isIn(planInfo.type.toLowerCase(), types);
 
-    if (userInfo.info) {
-        validateResult = validateResult &&
-            typeof(userInfo.info) === 'string' &&
-            validator.isLength(userInfo.info, { min: 1, max: 1000 });
-    }
+        if (!check) {
+            throw new Error('Invalid type');
+        }
 
-    if (userInfo.age) {
-        validateResult = validateResult &&
-            Number.isInteger(userInfo.age) &&
-            userInfo.age > 0 &&
-            userInfo.age < 150;
+        const venue = planInfo.venue;
+        if (planInfo.type.toLowerCase() === 'game') {
+            check =
+                venue && 
+                venue.gameTitle &&
+                typeof(venue.gameTitle) === 'string';
+        } else if (planInfo.type.toLowerCase() !== 'virtualParty') {
+            check =
+                venue && 
+                venue.country &&
+                venue.place &&
+                typeof(venue.country) === 'string' &&
+                typeof(venue.place) === 'string';
+        }
+        
+        if (!check) {
+            throw new Error('Invalid venue info');
+        }
     }
-
-    if (userInfo.isFavoritesVisible) {
-        validateResult = validateResult &&
-            typeof(userInfo.isFavoritesVisible) === 'boolean';
-    }
-
-    return validateResult;
 }
 
 module.exports = {
-    validateUserInfo
+    validateUserInfo, validatePlanInfo, checkRequiredFields
 }

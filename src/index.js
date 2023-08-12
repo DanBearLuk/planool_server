@@ -1,12 +1,9 @@
 const Config = require('../config');
 const db = require('./db');
-const validator = require('./validate');
-const ers = require('./errorHandlers');
 const { attachUser } = require('./middlewares');
 
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 
 const corsOptions = {
@@ -22,6 +19,7 @@ app.use(cookieParser());
 app.use(express.static('public', { maxAge: 31557600 }));
 
 app.use('/api/users', require('./routes/users'));
+app.use('/api/plans', require('./routes/plans'));
 
 const server = app.listen(Config.SERVER_PORT, '127.0.0.1', () => {
     const address = server.address().address;

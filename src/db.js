@@ -95,23 +95,30 @@ class Database {
         
         await this.usersCollection.insertOne(user);
 
+        delete user._id;
         return user;
     }
 
     async updateUserRecord(id, info) {
-        if (info.username) {
-            const isTaken = await this.findUserRecord(info.username) !== null;
+        if (info.set && info.set.username) {
+            const isTaken = await this.findUserRecord(info.set.username) !== null;
 
             if (isTaken) throw new Error('Username is already taken');
         }
 
-        if (info.password) {
-            info.password = await bcrypt.hash(info.password, 10);
+        if (info.set && info.set.password) {
+            info.set.password = await bcrypt.hash(info.set.password, 10);
         }
+
+        const instructions = {
+            $set: info.set ?? {},
+            $push: info.push ?? {},
+            $pull: info.pull ?? {}
+        };
 
         const record = (await this.usersCollection.findOneAndUpdate(
             { id },
-            { $set: info },
+            instructions,
             { returnDocument: 'after' }
         )).value;
 
@@ -121,6 +128,37 @@ class Database {
 
         delete record._id;
         return record;
+    }
+
+    async addPlanRecord(planInfo) {
+        const newId = (await this.getNewId(Counters.PLANS)).value.seq_value;
+
+        const plan = {
+            id: newId,
+            author: planInfo.author,
+            title: planInfo.title,
+            startDate: null,
+            endDate: null,
+            description: '',
+            visibility: planInfo.visibility,
+            isOnlyApproved: planInfo.isOnlyApproved,
+            participants: [],
+            blacklist: [],
+            collaborators: [],
+            isFinished: false,
+            type: planInfo.type,
+            theme: 'default',
+            cards: []
+        };
+
+        if (planInfo.venue) {
+            plan.venue = planInfo.venue;
+        }
+        
+        await this.plansCollection.insertOne(plan);
+
+        delete plan._id;
+        return plan;
     }
 
     async findPlanRecord(planId) {
