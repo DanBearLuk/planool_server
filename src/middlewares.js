@@ -35,7 +35,7 @@ function attachUser(db) {
 
 function attachPlan(db) {
     return async (req, res, next) => {
-        const planId = req.params.planId;
+        const planId = +req.params.planId;
 
         try {
             const record = await db.findPlanRecord(planId);
@@ -63,11 +63,9 @@ function checkAccess(isCreator = true) {
             throw new Error('attachPlan need to be called before this middleware')
         }
 
-        if (req.user.createdPlans.includes(req.plan.id)) {
+        if (req.plan.author === req.user.id) {
             next();
-        }
-
-        if (!isCreator && req.plan.editors.includes(req.user.id)) {
+        } else if (!isCreator && req.plan.collaborators.includes(req.user.id)) {
             next();
         } else {
             return ers.handleForbiddenError(res, 'Access denied');

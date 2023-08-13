@@ -157,8 +157,43 @@ class Database {
         
         await this.plansCollection.insertOne(plan);
 
+        await this.updateUserRecord(planInfo.author, {
+            push: {
+                createdPlans: newId
+            }
+        });
+
         delete plan._id;
         return plan;
+    }
+
+    async updatePlanRecord(planId, info) {
+        const record = (await this.plansCollection.findOneAndUpdate(
+            { id: planId },
+            { $set: info },
+            { returnDocument: 'after' }
+        )).value;
+
+        if (!record) {
+            throw new Error('Plan not found');
+        }
+
+        delete record._id;
+        return record;
+    }
+
+    async deletePlanRecord(userId, planId) {
+        const result = (await this.plansCollection.deleteOne(
+            { id: planId}
+        ));
+
+        await this.updateUserRecord(userId, {
+            pull: {
+                createdPlans: planId
+            }
+        });
+
+        return result.deletedCount === 1;
     }
 
     async findPlanRecord(planId) {

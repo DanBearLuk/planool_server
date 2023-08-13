@@ -192,4 +192,4 @@ function validatePlanInfo(planInfo) {
 
 module.exports = {
     validateUserInfo, validatePlanInfo, checkRequiredFields
-}
+};

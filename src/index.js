@@ -1,6 +1,4 @@
 const Config = require('../config');
-const db = require('./db');
-const { attachUser } = require('./middlewares');
 
 const express = require('express');
 const cors = require('cors');
