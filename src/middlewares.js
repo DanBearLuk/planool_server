@@ -1,5 +1,12 @@
 const { verifyJWT } = require('./jwt');
 const ers = require('./errorHandlers');
+const db = require('./db');
+
+const Roles = {
+    CREATOR: 0x001,
+    EDITOR: 0x010,
+    VIEWER: 0x100
+};
 
 function attachUser(db) {
     return async (req, res, next) => {
@@ -18,12 +25,13 @@ function attachUser(db) {
         }
 
         try {
-            const record = await db.findUserRecord(null, userId);
+            const record = await db.findUserRecord({ userId: userId });
 
             if (!record) {
                 return ers.handleForbiddenError(res, 'User not found');
             }
 
+            delete record._id;
             req.user = record;
 
             next();
@@ -35,7 +43,7 @@ function attachUser(db) {
 
 function attachPlan(db) {
     return async (req, res, next) => {
-        const planId = +req.params.planId;
+        const planId = req.params.planId;
 
         try {
             const record = await db.findPlanRecord(planId);
@@ -44,6 +52,7 @@ function attachPlan(db) {
                 return ers.handleNotFoundError(res, 'Plan not found');
             }
 
+            delete record._id;
             req.plan = record;
 
             next();
@@ -53,7 +62,7 @@ function attachPlan(db) {
     }
 }
 
-function checkAccess(isCreator = true) {
+function checkAccess(role = Roles.VIEWER) {
     return async (req, res, next) => {
         if (!req.user) {
             throw new Error('attachUser need to be called before this middleware')
@@ -63,9 +72,35 @@ function checkAccess(isCreator = true) {
             throw new Error('attachPlan need to be called before this middleware')
         }
 
-        if (req.plan.author === req.user.id) {
+        const isUserCreator = req.plan.author === req.user.id;
+        const isUserEditor = isUserCreator || req.plan.collaborators.includes(req.user.id);
+        let isUserViewer = isUserCreator || isUserEditor;
+
+        if (!req.plan.blacklist.includes(req.user.id)) {
+            if (req.plan.visibility === 'public' || req.plan.visibility === 'link_access') {
+                isUserViewer = true;
+            } else if (req.plan.whitelist.includes(req.user.id)) {
+                isUserViewer = true;
+            } else if (req.plan.visibility === 'friends') {
+                const author = await db.findUserRecord({ userId: req.plan.author });
+    
+                if (author && author.friends.includes(req.user.id)) {
+                    isUserViewer = true;
+                }
+            }   
+        }
+
+        req.userLocalRoles = {
+            isCreator: isUserCreator,
+            isEditor: isUserEditor,
+            isViewer: isUserViewer
+        };
+
+        if ((role & Roles.VIEWER) && isUserViewer) {
             next();
-        } else if (!isCreator && req.plan.collaborators.includes(req.user.id)) {
+        } else if ((role & Roles.EDITOR) && isUserEditor) {
+            next();
+        } else if ((role & Roles.CREATOR) && isUserCreator) {
             next();
         } else {
             return ers.handleForbiddenError(res, 'Access denied');
@@ -74,5 +109,6 @@ function checkAccess(isCreator = true) {
 }
 
 module.exports = {
-    attachUser, attachPlan, checkAccess
+    attachUser, attachPlan, checkAccess,
+    Roles
 };

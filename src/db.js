@@ -46,7 +46,7 @@ class Database {
         );
     }
 
-    async findUserRecord(username, userId) {
+    async findUserRecord({ username = null, userId = null }) {
         if (!username && !userId) {
             throw new Error('Incorrect arguments');
         }
@@ -71,7 +71,7 @@ class Database {
     }
 
     async addUserRecord(username, password) {
-        const isTaken = await this.findUserRecord(username) !== null;
+        const isTaken = await this.findUserRecord({ username }) !== null;
 
         if (isTaken) throw new Error('User already exists');
 
@@ -101,7 +101,9 @@ class Database {
 
     async updateUserRecord(id, info) {
         if (info.set && info.set.username) {
-            const isTaken = await this.findUserRecord(info.set.username) !== null;
+            const isTaken = await this.findUserRecord({ 
+                username: info.set.username 
+            }) !== null;
 
             if (isTaken) throw new Error('Username is already taken');
         }
@@ -132,9 +134,10 @@ class Database {
 
     async addPlanRecord(planInfo) {
         const newId = (await this.getNewId(Counters.PLANS)).value.seq_value;
+        const encodedId = Buffer.from(newId.toString()).toString('base64url');
 
         const plan = {
-            id: newId,
+            id: encodedId,
             author: planInfo.author,
             title: planInfo.title,
             startDate: null,
@@ -143,6 +146,7 @@ class Database {
             visibility: planInfo.visibility,
             isOnlyApproved: planInfo.isOnlyApproved,
             participants: [],
+            whitelist: [],
             blacklist: [],
             collaborators: [],
             isFinished: false,

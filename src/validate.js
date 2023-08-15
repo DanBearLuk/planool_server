@@ -113,7 +113,8 @@ function validatePlanInfo(planInfo) {
     ];
 
     const visibilityTypes = [
-        'private', 'public', 'friends'
+        'public', 'private', 'friends',
+        'link_access'
     ];
 
     const types = [
@@ -142,9 +143,11 @@ function validatePlanInfo(planInfo) {
     }
 
     if (planInfo.visibility) {
+        planInfo.visibility = planInfo.visibility.toLowerCase();
+
         const check =
             typeof(planInfo.visibility) === 'string' &&
-            validator.isIn(planInfo.visibility.toLowerCase(), visibilityTypes);
+            validator.isIn(planInfo.visibility, visibilityTypes);
         
         if (!check) {
             throw new Error('Invalid visibility');
@@ -161,21 +164,23 @@ function validatePlanInfo(planInfo) {
     }
 
     if (planInfo.type) {
+        planInfo.type = planInfo.type.toLowerCase();
+
         let check =
             typeof(planInfo.type) === 'string' &&
-            validator.isIn(planInfo.type.toLowerCase(), types);
+            validator.isIn(planInfo.type, types);
 
         if (!check) {
             throw new Error('Invalid type');
         }
 
         const venue = planInfo.venue;
-        if (planInfo.type.toLowerCase() === 'game') {
+        if (planInfo.type === 'game') {
             check =
                 venue && 
                 venue.gameTitle &&
                 typeof(venue.gameTitle) === 'string';
-        } else if (planInfo.type.toLowerCase() !== 'virtualParty') {
+        } else if (planInfo.type !== 'virtualparty') {
             check =
                 venue && 
                 venue.country &&

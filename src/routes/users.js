@@ -65,7 +65,7 @@ router.post('/login', async (req, res) => {
     }
 
     try {
-        const record = await db.findUserRecord(body.username);
+        const record = await db.findUserRecord({ username: body.username });
 
         if (!record) {
             return ers.handleForbiddenError(res, 'Username is incorrect');
@@ -125,7 +125,7 @@ router.post('/isUsernameAvailable', async (req, res) => {
     }
 
     try {
-        const result = await db.findUserRecord(body.username);
+        const result = await db.findUserRecord({ username: body.username });
 
         return res.status(200).json({
             isAvailable: !result
