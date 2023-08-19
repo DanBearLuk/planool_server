@@ -25,7 +25,7 @@ function attachUser(db) {
         }
 
         try {
-            const record = await db.findUserRecord({ userId: userId });
+            const record = await db.findUserRecord({ userId });
 
             if (!record) {
                 return ers.handleForbiddenError(res, 'User not found');
