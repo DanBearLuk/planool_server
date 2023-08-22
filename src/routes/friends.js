@@ -96,19 +96,19 @@ router.delete('/remove/:friendId', async (req, res) => {
         if (await db.findUserRecord({ userId: friendId })) {
             await db.updateUserRecord(friendId, {
                 pull: {
-                    friends: { userId: req.user.id }
+                    friends: req.user.id
                 }
             });
         }
 
         const updatedRecord = await db.updateUserRecord(req.user.id, {
             pull: {
-                friends: { userId: friendId }
+                friends: friendId
             }
         });
 
         socketManager.emit(friendId, 'deleteFriend', {
-            id: req.user.id
+            userId: req.user.id
         });
 
         delete updatedRecord.password;

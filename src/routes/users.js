@@ -1,6 +1,5 @@
 const validator = require('../validate');
 const ers = require('../errorHandlers');
-const socketManager = require('../socketManager');
 const { db } = require('../db');
 const { attachUser } = require('../middlewares');
 const { createJWT } = require('../jwt');

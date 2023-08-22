@@ -175,19 +175,18 @@ class Database {
     }
 
     async deleteNotification(userId, notificationId) {
-        const result = this.updateUserRecord(userId, {
-            pull: {
-                notifications: {
-                    id: notificationId
-                }
-            }
-        });
+        const result = (await this.usersCollection.findOneAndUpdate(
+            { id: userId },
+            { $pull: { notifications: { id: notificationId }}}
+        )).value;
 
-        if (result) {
+        const ok = result.notifications.some(n => n.id === notificationId);
+
+        if (ok) {
             notificationEmitter.emit('deleteNotification', userId, notificationId);
         }
 
-        return result !== undefined;
+        return ok;
     }
 
     async addPlanRecord(planInfo) {
