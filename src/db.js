@@ -1,12 +1,16 @@
 const Config = require('../config');
 const regCleanup = require('./cleanup');
+
 const bcrypt = require('bcrypt');
+const EventEmitter = require('events');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const Counters = {
     USERS: 'users',
     PLANS: 'plans'
 };
+
+const notificationEmitter = new EventEmitter();
 
 class Database {
     constructor(address, username, password) {
@@ -39,11 +43,13 @@ class Database {
             throw new Error('Unknown type');
         }
 
-        return this.countersCollection.findOneAndUpdate(
+        const result = await this.countersCollection.findOneAndUpdate(
             { type: counterType },
             { $inc: { seq_value: 1 }}, 
             { returnDocument: 'after' }
         );
+
+        return result.value.seq_value;
     }
 
     async findUserRecord({ username = null, userId = null }) {
@@ -76,7 +82,7 @@ class Database {
         if (isTaken) throw new Error('User already exists');
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newId = (await this.getNewId(Counters.USERS)).value.seq_value;
+        const newId = await this.getNewId(Counters.USERS);
 
         const user = {
             id: newId,
@@ -88,8 +94,14 @@ class Database {
             info: '',
             age: 0,
             friends: [],
+            friendRequests: {
+                inbox: [],
+                outbox: []
+            },
             createdPlans: [],
             favoritePlans: [],
+            lastNotificationId: 0,
+            notifications: [],
             isFavoritesVisible: true
         };
         
@@ -132,8 +144,54 @@ class Database {
         return record;
     }
 
+    async addNotification(userId, notification) {
+        const updateResult = (await this.usersCollection.findOneAndUpdate(
+            { id: userId },
+            { $inc: { lastNotificationId: 1 }}, 
+            { returnDocument: 'after' }
+        ));
+
+        if (!updateResult) {
+            throw new Error('User not found');
+        }
+
+        notification.id = updateResult.value.lastNotificationId;
+        notification.datetime = new Date();
+
+        const result = this.updateUserRecord(userId, {
+            push: {
+                notifications: notification
+            }
+        });
+
+        if (!result) {
+            throw new Error('Internal error');
+        }
+
+        delete notification._id;
+        notificationEmitter.emit('addNotification', userId, notification);
+
+        return notification;
+    }
+
+    async deleteNotification(userId, notificationId) {
+        const result = this.updateUserRecord(userId, {
+            pull: {
+                notifications: {
+                    id: notificationId
+                }
+            }
+        });
+
+        if (result) {
+            notificationEmitter.emit('deleteNotification', userId, notificationId);
+        }
+
+        return result !== undefined;
+    }
+
     async addPlanRecord(planInfo) {
-        const newId = (await this.getNewId(Counters.PLANS)).value.seq_value;
+        const newId = await this.getNewId(Counters.PLANS);
         const encodedId = Buffer.from(newId.toString()).toString('base64url');
 
         const plan = {
@@ -220,4 +278,6 @@ db.run().then(() => {
     console.dir(e);
 });
 
-module.exports = db;
+module.exports = {
+    db, notificationEmitter
+};

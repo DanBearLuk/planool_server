@@ -5,7 +5,7 @@ const Config = {
     SOCKET_PORT: process.env.SOCKET_PORT || 5000,
     DB: {
         USERNAME: 'admin',
-        PASSWORD: encodeURIComponent('UxBR2cXoq4W3C0ON'),
+        PASSWORD: encodeURIComponent('clTHezxZXOVSgkOj'),
         ADDRESS: 'planool.qtanxeq.mongodb.net'
     }
 };

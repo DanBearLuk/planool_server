@@ -1,4 +1,4 @@
-const db = require('./db');
+const { db, notificationEmitter } = require('./db');
 const { verifyJWT } = require('./jwt');
 
 class SocketManager {
@@ -7,6 +7,9 @@ class SocketManager {
         this.planSockets = new Map();
 
         this._eventListeners = new Map();
+
+        notificationEmitter.on('addNotification', this.showNotification.bind(this));
+        notificationEmitter.on('deleteNotification', this.hideNotification.bind(this));
     }
 
     async _authorize(request) {
@@ -144,7 +147,15 @@ class SocketManager {
         }
     }
 
-    emit(event, data, userIds) {
+    showNotification(userId, notification) {
+        this.emit(userId, 'showNotification', notification);
+    }
+
+    hideNotification(userId, notificationId) {
+        this.emit(userId, 'hideNotification', notificationId);
+    }
+
+    emit(userIds, event, data) {
         if (!Array.isArray(userIds)) {
             userIds = [ userIds ];
         }
@@ -172,8 +183,12 @@ class SocketManager {
         };
 
         userIds.forEach(userId => {
-            const sockets = Array.from(this.clientSockets.get(userId).sockets.values());
+            const userSocketsInfo = this.clientSockets.get(userId);
+            if (!userSocketsInfo) {
+                return;
+            }
 
+            const sockets = Array.from(userSocketsInfo.sockets.values());
             if (sockets.length === 0) {
                 return;
             }
@@ -189,17 +204,17 @@ class SocketManager {
         });
     }
 
-    send(message, userIds) {
-        this.emit('message', message, userIds);
+    send(userIds, message) {
+        this.emit(userIds, 'message', message);
     }
 
     close(userId, socketId, code = 1000, reason = null) {
-        const sockets = this.clientSockets.get(userId).sockets;
-        if (!sockets) {
+        const userSocketsInfo = this.clientSockets.get(userId);
+        if (!userSocketsInfo) {
             return;
         }
 
-        const socketInfo = sockets.get(socketId);
+        const socketInfo = userSocketsInfo.sockets.get(socketId);
         if (!socketInfo) {
             return;
         }
@@ -211,9 +226,9 @@ class SocketManager {
         if (reason) socketInfo.socket.close(code, reason);
         else socketInfo.socket.close(code);
 
-        sockets.delete(socketId);
+        userSocketsInfo.sockets.delete(socketId);
 
-        if (sockets.size === 0) {
+        if (userSocketsInfo.sockets.size === 0) {
             this.clientSockets.delete(userId);
         }
     }
@@ -222,20 +237,25 @@ class SocketManager {
 const socketManager = new SocketManager();
 
 // test
-socketManager.addEventListener('command', (sInfo, cmd) => {
+socketManager.addEventListener('command', async (sInfo, cmd) => {
     const parts = cmd.split(' ');
 
     switch (parts[0]) {
         case 'send':
-            socketManager.send(parts[1], sInfo.userId);
+            socketManager.send(sInfo.userId, parts[1]);
             break;
 
         case 'emit':
-            socketManager.emit(parts[1], parts[2], sInfo.userId);
+            socketManager.emit(sInfo.userId, parts[1], parts[2]);
+            break;
+
+        case 'whoami':
+            const record = await db.findUserRecord({ userId: sInfo.userId });
+            socketManager.send(sInfo.userId, record);
             break;
 
         default:
-            socketManager.emit('error', 'Invalid command', sInfo.userId);
+            socketManager.emit(sInfo.userId, 'error', 'Invalid command');
             break;
     }
 })

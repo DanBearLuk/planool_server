@@ -1,6 +1,6 @@
-const { verifyJWT } = require('./jwt');
 const ers = require('./errorHandlers');
-const db = require('./db');
+const { verifyJWT } = require('./jwt');
+const { db } = require('./db');
 
 const Roles = {
     CREATOR: 0x001,

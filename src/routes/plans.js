@@ -1,6 +1,6 @@
 const validator = require('../validate');
 const ers = require('../errorHandlers');
-const db = require('../db');
+const { db } = require('../db');
 const { 
     attachUser, 
     attachPlan, 

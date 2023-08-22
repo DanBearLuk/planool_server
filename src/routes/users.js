@@ -1,6 +1,7 @@
 const validator = require('../validate');
 const ers = require('../errorHandlers');
-const db = require('../db');
+const socketManager = require('../socketManager');
+const { db } = require('../db');
 const { attachUser } = require('../middlewares');
 const { createJWT } = require('../jwt');
 
@@ -153,11 +154,11 @@ router.put('/updateInfo', async (req, res) => {
 
     if (body.new.password) {
         if (!body.old || !body.old.password || typeof(body.old.password) !== 'string') {
-            return ers.handleForbiddenError('Old password is missing');
+            return ers.handleForbiddenError(res, 'Old password is missing');
         }
 
         if (!await bcrypt.compare(body.old.password, req.user.password)) {
-            return ers.handleForbiddenError('Old password is incorrect');
+            return ers.handleForbiddenError(res, 'Old password is incorrect');
         }
     }
 
@@ -173,7 +174,7 @@ router.put('/updateInfo', async (req, res) => {
             e.message === 'Username is already taken' ||
             e.message === 'User not found'
         ) {
-            return ers.handleConflictError(e.message);
+            return ers.handleConflictError(res, e.message);
         }
 
         return ers.handleInternalError(res, e);
