@@ -21,6 +21,8 @@ app.use(express.static('public', { maxAge: 31557600 }));
 
 app.use('/api/users', require('./routes/users'));
 app.use('/api/plans', require('./routes/plans'));
+app.use('/api/friends', require('./routes/friends'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 app.ws('/socket', (socket, req) => socketManager.onConnection(socket, req));
 
