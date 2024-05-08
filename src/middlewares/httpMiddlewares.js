@@ -1,8 +1,8 @@
-const ers = require('./errorHandlers');
-const { verifyJWT } = require('./jwt');
-const { db } = require('./db');
+const ers = require('../errorHandlers');
+const { verifyJWT } = require('../jwt');
+const { db } = require('../db');
 
-const Roles = {
+const PlanRoles = {
     CREATOR: 0x001,
     EDITOR: 0x010,
     VIEWER: 0x100
@@ -45,6 +45,10 @@ function attachPlan(db) {
     return async (req, res, next) => {
         const planId = req.params.planId;
 
+        if (!planId) {
+            return ers.handleBadRequestError(res, 'Incorrect plan\'s id');
+        }
+
         try {
             const record = await db.findPlanRecord(planId);
 
@@ -52,7 +56,6 @@ function attachPlan(db) {
                 return ers.handleNotFoundError(res, 'Plan not found');
             }
 
-            delete record._id;
             req.plan = record;
 
             next();
@@ -62,7 +65,42 @@ function attachPlan(db) {
     }
 }
 
-function checkAccess(role = Roles.VIEWER) {
+function attachChat(db) {
+    return async (req, res, next) => {
+        const chatId = req.params.chatId;
+
+        if (!chatId) {
+            return ers.handleBadRequestError(res, 'Incorrect chat\'s id');
+        }
+
+        try {
+            const record = await db.findChatRecord(chatId);
+
+            if (!record) {
+                return ers.handleNotFoundError(res, 'Chat not found');
+            }
+
+            if (!req.user) {
+                throw new Error('attachUser need to be called before this middleware')
+            }
+
+            const memberInfo = record.members.find(m => m.id === req.user.id);
+
+            if (!memberInfo) {
+                return ers.handleForbiddenError(res, 'User is not member of chat');
+            }
+
+            req.chat = record;
+            req.chatRole = memberInfo.role;
+
+            next();
+        } catch (e) {
+            return ers.handleInternalError(res, e);  
+        }
+    }
+}
+
+function checkPlanAccess(role = PlanRoles.VIEWER) {
     return async (req, res, next) => {
         if (!req.user) {
             throw new Error('attachUser need to be called before this middleware')
@@ -96,11 +134,11 @@ function checkAccess(role = Roles.VIEWER) {
             isViewer: isUserViewer
         };
 
-        if ((role & Roles.VIEWER) && isUserViewer) {
+        if ((role & PlanRoles.VIEWER) && isUserViewer) {
             next();
-        } else if ((role & Roles.EDITOR) && isUserEditor) {
+        } else if ((role & PlanRoles.EDITOR) && isUserEditor) {
             next();
-        } else if ((role & Roles.CREATOR) && isUserCreator) {
+        } else if ((role & PlanRoles.CREATOR) && isUserCreator) {
             next();
         } else {
             return ers.handleForbiddenError(res, 'Access denied');
@@ -109,6 +147,7 @@ function checkAccess(role = Roles.VIEWER) {
 }
 
 module.exports = {
-    attachUser, attachPlan, checkAccess,
-    Roles
+    attachUser, attachPlan, 
+    checkPlanAccess, attachChat,
+    PlanRoles
 };

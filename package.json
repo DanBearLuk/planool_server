@@ -19,6 +19,7 @@
     "express-ws": "^5.0.2",
     "jose": "^4.14.4",
     "mongodb": "^5.7.0",
+    "node-cache": "^5.1.2",
     "validator": "^13.9.0",
     "ws": "^8.13.0"
   }

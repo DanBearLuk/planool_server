@@ -102,7 +102,12 @@ function validateUserInfo(userInfo) {
     }
 }
 
-function validatePlanInfo(planInfo) {
+function validatePlanInfo(planInfo, checkRequired = false) {
+    const requiredFields = [
+        'title', 'visibility', 'type',
+        'isOnlyApproved'
+    ];
+
     const allowedFields = [
         'title', 'visibility', 'type',
         'venue', 'isOnlyApproved'
@@ -122,6 +127,10 @@ function validatePlanInfo(planInfo) {
         'game', 'tour', 'indoorparty',
         'outdoorparty', 'virtualparty'
     ];
+
+    if (checkRequired && !checkRequiredFields(planInfo, requiredFields)) {
+        throw new Error('Invalid parameters');
+    }
 
     if (!isAllowedKeys(planInfo, allowedFields)) {
         throw new Error('Invalid parameters');
@@ -195,6 +204,29 @@ function validatePlanInfo(planInfo) {
     }
 }
 
+function validateMessage(message) {
+    const allowedFields = [
+        'text'
+    ];
+
+    if (!isAllowedKeys(message, allowedFields)) {
+        throw new Error('Invalid parameters');
+    }
+
+    const check =
+        message.text !== undefined &&
+        typeof(message.text) === 'string' && 
+        !isTrimmable(message.text) &&
+        validator.isLength(message.text, { min: 1, max: 4096 });
+    
+    if (!check) {
+        throw new Error('Invalid text');
+    }
+}
+
 module.exports = {
-    validateUserInfo, validatePlanInfo, checkRequiredFields
+    validateUserInfo, 
+    validatePlanInfo, 
+    checkRequiredFields,
+    validateMessage
 };

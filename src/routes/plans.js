@@ -1,12 +1,13 @@
 const validator = require('../validate');
 const ers = require('../errorHandlers');
 const { db } = require('../db');
+
 const { 
     attachUser, 
     attachPlan, 
-    checkAccess, 
-    Roles 
-} = require('../middlewares');
+    checkPlanAccess, 
+    PlanRoles 
+} = require('../middlewares/httpMiddlewares');
 
 const express = require('express');
 const rateLimiter = require('express-rate-limit');
@@ -21,113 +22,37 @@ const limit = (period, amount) => rateLimiter({
     legacyHeaders: false
 });
 
+const { 
+    viewPlan, 
+    createPlan,
+    updatePlan,
+    deletePlan
+} = require('../handlers/plans');
+
 //router.use('/create', limit(60 * 60 * 1000, 5));
 router.use('/create', attachUser(db));
 router.use('/create', bodyParser.json());
-router.post('/create', async (req, res) => {
-    const body = req.body;
-    const reqFields = [
-        'title', 'visibility', 'type',
-        'isOnlyApproved'
-    ];
-
-    if (!body || !validator.checkRequiredFields(body, reqFields)) {
-        return ers.handleBadRequestError(res);
-    }
-
-    try {
-        validator.validatePlanInfo(body)
-    } catch (e) {
-        return ers.handleBadRequestError(res, e.message);
-    }
-
-    try {
-        const record = await db.addPlanRecord({ 
-            author: req.user.id, 
-            ...req.body 
-        });
-
-        return res.status(200).json({
-            plan: record
-        });
-    } catch (e) {
-        return ers.handleInternalError(res, e);
-    }
-});
+router.post('/create', createPlan);
 
 //router.use('/:planId/update', limit(1 * 60 * 1000, 2));
-router.use('/:planId/update', [
-    attachUser(db), 
-    attachPlan(db), 
-    checkAccess(Roles.CREATOR)
-]);
+router.use('/:planId/update', attachUser(db));
+router.use('/:planId/update', attachPlan(db));
+router.use('/:planId/update', checkPlanAccess(PlanRoles.CREATOR));
 router.use('/:planId/update', bodyParser.json());
-router.put('/:planId/update', async (req, res) => {
-    const body = req.body;
-
-    if (!body) {
-        return ers.handleBadRequestError(res);
-    }
-
-    try {
-        validator.validatePlanInfo(body)
-    } catch (e) {
-        return ers.handleBadRequestError(res, e.message);
-    }
-
-    try {
-        const record = await db.updatePlanRecord(req.plan.id, body);
-
-        return res.status(200).json({
-            plan: record
-        });
-    } catch (e) {
-        return ers.handleInternalError(res, e);
-    }
-});
+router.put('/:planId/update', updatePlan);
 
 //router.use('/:planId/delete', limit(1 * 60 * 1000, 2));
-router.use('/:planId/delete', [
-    attachUser(db), 
-    attachPlan(db), 
-    checkAccess(Roles.CREATOR)
-]);
-router.delete('/:planId/delete', async (req, res) => {
-    try {
-        await db.deletePlanRecord(req.user.id, req.plan.id);
-
-        return res.status(200).json({
-            ok: true
-        });
-    } catch (e) {
-        return ers.handleInternalError(res, e);
-    }
-});
+router.use('/:planId/delete', attachUser(db));
+router.use('/:planId/delete', attachPlan(db));
+router.use('/:planId/delete', checkPlanAccess(PlanRoles.CREATOR));
+router.delete('/:planId/delete', deletePlan);
 
 //router.use('/:planId/view', limit(1 * 60 * 1000, 2));
-router.use('/:planId/view', [
-    attachUser(db), 
-    attachPlan(db), 
-    checkAccess(Roles.VIEWER)
-]);
-router.get('/:planId/view', async (req, res) => {
-    try {
-        let planInfo = req.plan;
+router.use('/:planId/view', attachUser(db));
+router.use('/:planId/view', attachPlan(db));
+router.use('/:planId/view', checkPlanAccess(PlanRoles.CREATOR));
+router.get('/:planId/view', viewPlan);
 
-        if (!req.userLocalRoles.isEditor && !req.userLocalRoles.isCreator) {
-            delete planInfo.participants;
-            delete planInfo.blacklist;
-            delete planInfo.whitelist;
-            delete planInfo.collaborators;
-        }
-
-        return res.status(200).json({
-            plan: planInfo,
-            userLocalRoles: req.userLocalRoles
-        });
-    } catch (e) {
-        return ers.handleInternalError(res, e);
-    }
-});
-
-module.exports = router;
+module.exports = {
+    router
+};
