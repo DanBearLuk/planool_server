@@ -1,12 +1,14 @@
 const NodeCache = require('node-cache');
 
 class Cache {
-    constructor(...categories) {
-        const options = {
-            stdTTL: 600,
-            checkperiod: 300,
-            useClones: false
-        };
+    constructor(categories, options = null) {
+        if (!options) {
+            options = {
+                stdTTL: 600,
+                checkperiod: 300,
+                useClones: false
+            };
+        }
 
         this._caches = {};
 
@@ -19,8 +21,8 @@ class Cache {
         this._caches[category.toString()].get(key);
     }
 
-    set(category, key, value) {
-        this._caches[category.toString()].set(key, value);
+    set(category, key, value, ttl = undefined) {
+        this._caches[category.toString()].set(key, value, ttl);
     }
 
     has(category, key) {
@@ -29,6 +31,14 @@ class Cache {
 
     del(category, key) {
         this._caches[category.toString()].del(key);
+    }
+
+    ttl(category, key, ttl) {
+        this._caches[category.toString()].ttl(key, ttl);
+    }
+
+    on(category, eventName, callback) {
+        this._caches[category.toString()].on(eventName, callback);
     }
 }
 

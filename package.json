@@ -4,7 +4,8 @@
   "description": "planool server",
   "main": "src/index.js",
   "scripts": {
-    "start": "cross-env SERVER_PORT=2700 node src/index.js"
+    "start": "cross-env SERVER_PORT=2700 node src/index.js",
+    "hotstart": "cross-env SERVER_PORT=2700 nodemon src/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -20,6 +21,7 @@
     "jose": "^4.14.4",
     "mongodb": "^5.7.0",
     "node-cache": "^5.1.2",
+    "nodemon": "^3.1.0",
     "validator": "^13.9.0",
     "ws": "^8.13.0"
   }

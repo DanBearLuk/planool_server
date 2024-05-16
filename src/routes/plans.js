@@ -37,20 +37,20 @@ router.post('/create', createPlan);
 //router.use('/:planId/update', limit(1 * 60 * 1000, 2));
 router.use('/:planId/update', attachUser(db));
 router.use('/:planId/update', attachPlan(db));
-router.use('/:planId/update', checkPlanAccess(PlanRoles.CREATOR));
+router.use('/:planId/update', checkPlanAccess(db, PlanRoles.CREATOR));
 router.use('/:planId/update', bodyParser.json());
 router.put('/:planId/update', updatePlan);
 
 //router.use('/:planId/delete', limit(1 * 60 * 1000, 2));
 router.use('/:planId/delete', attachUser(db));
 router.use('/:planId/delete', attachPlan(db));
-router.use('/:planId/delete', checkPlanAccess(PlanRoles.CREATOR));
+router.use('/:planId/delete', checkPlanAccess(db, PlanRoles.CREATOR));
 router.delete('/:planId/delete', deletePlan);
 
 //router.use('/:planId/view', limit(1 * 60 * 1000, 2));
 router.use('/:planId/view', attachUser(db));
 router.use('/:planId/view', attachPlan(db));
-router.use('/:planId/view', checkPlanAccess(PlanRoles.CREATOR));
+router.use('/:planId/view', checkPlanAccess(db, PlanRoles.CREATOR));
 router.get('/:planId/view', viewPlan);
 
 module.exports = {

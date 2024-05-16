@@ -257,7 +257,7 @@ class SocketManager {
         }
     }
 
-    emit(socketIds, route, data) {
+    emit(socketIds, route, data, onEmitFail = null) {
         if (!Array.isArray(socketIds)) {
             socketIds = [socketIds];
         }
@@ -277,6 +277,7 @@ class SocketManager {
                 if (attemptsLeft > 1) {
                     tryToSend(socketInfo, message, --attemptsLeft);
                 } else {
+                    onEmitFail?.(socketInfo.socketId);
                     this.close(socketInfo.userId, socketInfo.socketId, 1002, 'No response');
                 }
             }, 1500);

@@ -29,7 +29,7 @@ class Database {
         this.countersCollection = this._client.db('planool').collection('counters');
 
         this.emitter = new EventEmitter();
-        this.cache = new Cache('users', 'chats', 'plans');
+        this.cache = new Cache(['users', 'chats', 'plans']);
     }
 
     async run() {
@@ -219,7 +219,7 @@ class Database {
             isFinished: false,
             type: planInfo.type,
             theme: 'default',
-            cards: []
+            blocks: []
         };
 
         if (planInfo.venue) {
