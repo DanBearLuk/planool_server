@@ -1,11 +1,10 @@
 const ers = require('../errorHandlers');
 const { verifyJWT } = require('../jwt');
-const { db } = require('../db');
 
 const PlanRoles = {
-    CREATOR: 0x001,
-    EDITOR: 0x010,
-    VIEWER: 0x100
+    CREATOR: 0b00,
+    EDITOR:  0b01,
+    VIEWER:  0b10
 };
 
 function attachUser(db) {
@@ -100,7 +99,7 @@ function attachChat(db) {
     }
 }
 
-function checkPlanAccess(role = PlanRoles.VIEWER) {
+function checkPlanAccess(db, role = PlanRoles.VIEWER) {
     return async (req, res, next) => {
         if (!req.user) {
             throw new Error('attachUser need to be called before this middleware')
@@ -112,9 +111,9 @@ function checkPlanAccess(role = PlanRoles.VIEWER) {
 
         const isUserCreator = req.plan.author === req.user.id;
         const isUserEditor = isUserCreator || req.plan.collaborators.includes(req.user.id);
-        let isUserViewer = isUserCreator || isUserEditor;
+        let isUserViewer = isUserEditor;
 
-        if (!req.plan.blacklist.includes(req.user.id)) {
+        if (!req.plan.blacklist.includes(req.user.id) && !isUserViewer) {
             if (req.plan.visibility === 'public' || req.plan.visibility === 'link_access') {
                 isUserViewer = true;
             } else if (req.plan.whitelist.includes(req.user.id)) {
