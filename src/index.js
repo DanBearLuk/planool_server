@@ -4,7 +4,9 @@ const express = require('express');
 const wsInit = require('express-ws');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const { db } = require('./db');
 const { socketManager } = require('./socketManager');
+const PlanEditorManager = require('./planEditorManager');
 
 const corsOptions = {
     origin: Config.CLIENT_URL,
@@ -14,6 +16,7 @@ const corsOptions = {
 
 const app = express();
 const ws = wsInit(app);
+const planEditorManager = PlanEditorManager(socketManager, db);
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
