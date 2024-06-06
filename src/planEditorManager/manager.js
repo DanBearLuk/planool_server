@@ -1,5 +1,5 @@
 const Cache = require('../cache');
-const { attachUserToSocket, checkPlanAccessFromSocket, PlanRoles } = require('../middlewares/socketMiddlewares');
+const { attachUserToSocket, checkPlanAccessFromSocket, PlanRoles, attachPlanToSocket } = require('../middlewares/socketMiddlewares');
 const { Tii, Tid, Tdd, Tdi, Trr, Taa, TransformedRules } = require('./OTfunctions');
 
 const EditTypes = Object.freeze({
@@ -10,12 +10,20 @@ const EditTypes = Object.freeze({
 });
 
 const OTF = {
-    [[EditTypes.INSERT, EditTypes.INSERT]]: Tii,
-    [[EditTypes.INSERT, EditTypes.DELETE]]: Tid,
-    [[EditTypes.DELETE, EditTypes.INSERT]]: Tdi,
-    [[EditTypes.DELETE, EditTypes.DELETE]]: Tdd,
-    [[EditTypes.REORDER, EditTypes.REORDER]]: Trr,
-    [[EditTypes.ACTION, EditTypes.ACTION]]: Taa,
+    [EditTypes.INSERT]: {
+        [EditTypes.INSERT]: Tii,
+        [EditTypes.DELETE]: Tid
+    },
+    [EditTypes.DELETE]: {
+        [EditTypes.INSERT]: Tdi,
+        [EditTypes.DELETE]: Tdd
+    },
+    [EditTypes.REORDER]: {
+        [EditTypes.REORDER]: Trr
+    },
+    [EditTypes.ACTION]: {
+        [EditTypes.ACTION]: Taa
+    }
 };
 
 class PlanEditorManager {
@@ -29,7 +37,7 @@ class PlanEditorManager {
 
         this._cache.on('plans', 'del', (planId, plan) => {
             this._socketManager.emit(plan.connectedSockets, 'planEditor/disconnect', { planId });
-            this._unloadPlan(this._cache.get(plan));
+            this._unloadPlan(plan.planInfo);
         });
     }
 
@@ -37,11 +45,11 @@ class PlanEditorManager {
         this._socketManager.use('planEditor/connect', attachUserToSocket(this._db));
         this._socketManager.use('planEditor/connect', attachPlanToSocket(this._db));
         this._socketManager.use('planEditor/connect', checkPlanAccessFromSocket(this._db, PlanRoles.EDITOR));
-        this._socketManager.use('planEditor/connect', this._connectUser);
+        this._socketManager.use('planEditor/connect', this._connectUser.bind(this));
 
-        this._socketManager.use('planEditor/handleEdit', this._handleChange);
+        this._socketManager.use('planEditor/handleEdit', this._handleChange.bind(this));
 
-        this._socketManager.use('planEditor/disconnect', this._disconnectUser);
+        this._socketManager.use('planEditor/disconnect', this._disconnectUser.bind(this));
     }
 
     _handleChange(req, res) {
@@ -51,7 +59,7 @@ class PlanEditorManager {
 
         const plan = this._cache.get('plans', planId);
 
-        if (plan) {
+        if (!plan) {
             return res(404, 'Cached plan not found');
         } else if (plan.connectedSockets.indexOf(socketId) === -1) {
             return res(401, 'No connection established');
@@ -65,8 +73,7 @@ class PlanEditorManager {
 
             for (let i = plan.log.length - revOffset; i++; i < plan.log.length) {
                 const loggedAction = plan.log[i];
-                const actionTypePair = [transformedAction.type, loggedAction.type];
-                const OTFunction = OTF[actionTypePair];
+                const OTFunction = OTF[transformedAction.type][loggedAction.type];
 
                 if (!OTFunction) {
                     continue;
@@ -78,54 +85,58 @@ class PlanEditorManager {
                     needPropagation = false;
                     break;
                 } else {
-                    transformedAction = needPropagation;
+                    transformedAction = result;
                 }
             }
         }
 
         if (needPropagation) {
+            this._applyEdit(planId, transformedAction);
             transformedAction.sid = socketId;
+
+            plan.log.push(transformedAction);
+            plan.lastRevision += 1;
 
             const socketIds = plan.connectedSockets.filter(sid => sid !== socketId);
             
             this._socketManager.emit(socketIds, 'planEditor/handleEdit', {
                 planId,
-                actionInfo: transformedAction
+                actionInfo: transformedAction,
+                revision: plan.lastRevision
             }, 
             sid => {
                 let idx = plan.connectedSockets.indexOf(sid);
                 plan.connectedSockets.splice(idx, 1);
 
                 if (plan.connectedSockets.length === 0) {
-                    this._unloadPlan(plan);
+                    this._unloadPlan(plan.planInfo);
                 }
             });
-
-            plan.log.push(transformedAction);
-            plan.lastRevision += 1;
         }
 
         this._cache.ttl('plans', planId, 1200);
+
+        res(200, { revision: plan.lastRevision });
     }
     
     _applyEdit(planId, actionInfo) {
-        const plan = this._cache.get('plans', planId);
+        const plan = this._cache.get('plans', planId).planInfo;
 
         switch (actionInfo.type) {
             case EditTypes.INSERT: {
-                const { bid: blockId, fieldName, p: pos, d: data} = actionInfo;
+                const { bid: blockId, fname: fieldName, p: pos, d: data } = actionInfo;
                 this._applyInsert(plan, blockId, fieldName, pos, data);
                 break;
             }
 
             case EditTypes.DELETE: {
-                const { bid: blockId, fieldName, p: pos, c: count} = actionInfo;
+                const { bid: blockId, fname: fieldName, p: pos, c: count } = actionInfo;
                 this._applyDelete(plan, blockId, fieldName, pos, count);
                 break;
             }
 
             case EditTypes.REORDER: {
-                const { bid: blockId, p: pos} = actionInfo;
+                const { bid: blockId, p: pos } = actionInfo;
                 this._applyReorder(plan, blockId, pos);
                 break;
             }
@@ -160,24 +171,38 @@ class PlanEditorManager {
     }
 
     _applyAction(plan, actionInfo) {
-        switch(actionInfo.subtype) {
-            case (deleteBlock):
-                const blockId = actionInfo.blockId;
-                plan.blocks = plan.blocks.filter(block => block.id !== blockId);
+        switch(actionInfo.stype) {
+            case ('deleteBlock'): {
+                plan.blocks = plan.blocks.filter(block => block.id !== actionInfo.bid);
                 break;
-            
-            case (setFieldValue):
-                const fieldName = actionInfo.fieldName;
-                const value = actionInfo.value;
+            }
 
-                if (plan.hasOwnProperty(fieldName)) {
-                    plan[fieldName] = value;
+            case ('createBlock'): {
+                const blockInfo = actionInfo.binfo;
+                plan.blocks.push(blockInfo);
+                break;
+            }
+            
+            case ('setFieldValue'): {
+                let obj = plan;
+
+                if (actionInfo.bid !== undefined) {
+                    obj = plan.blocks.find(block => block.id === actionInfo.bid);
+                }
+
+                const fieldName = actionInfo.fname;
+                const value = actionInfo.val;
+
+                if (obj?.hasOwnProperty(fieldName)) {
+                    obj[fieldName] = value;
+                } else if (actionInfo.bid !== undefined && obj.fields?.hasOwnProperty(fieldName)) {
+                    obj.fields[fieldName] = value;
                 }
 
                 break;
+            }
             
-            default:
-                break;
+            default: break;
         }
     }
 
@@ -195,11 +220,10 @@ class PlanEditorManager {
         plan.connectedSockets.push(socketId);
 
         if (!this._intervals[planId]) {
-            this._intervals[planId] = setInterval(() => this._savePlan(plan), 300000);
+            this._intervals[planId] = setInterval(() => this._savePlan(plan.planInfo), 300000);
         }
 
         return res(200, {
-            ok: true,
             planInfo: plan.planInfo,
             lastSyncedRevision: plan.lastRevision
         });
@@ -215,10 +239,10 @@ class PlanEditorManager {
         plan.connectedSockets.splice(idx, 1);
 
         if (plan.connectedSockets.length === 0) {
-            this._unloadPlan(this._cache.get(planId));
+            this._unloadPlan(this._cache.get(planId).planInfo);
         }
         
-        return res(200);
+        return res(200, {});
     }
 
     async _loadPlan(planId) {
@@ -229,7 +253,7 @@ class PlanEditorManager {
         }
 
         const plan = {
-            ...planInfo,
+            planInfo,
             connectedSockets: [],
             lastRevision: 0,
             log: []
@@ -243,7 +267,7 @@ class PlanEditorManager {
 
         this._cache.del('plans', plan.id);
             
-        clearInterval(this._intervals(plan.id));
+        clearInterval(this._intervals[plan.id]);
         delete this._intervals[plan.id];
     }
 

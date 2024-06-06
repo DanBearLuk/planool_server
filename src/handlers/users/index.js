@@ -1,3 +1,4 @@
+const getUser = require('./getUser');
 const isUsernameAvailable = require('./isUsernameAvailable');
 const loginUser = require('./loginUser');
 const registerUser = require('./registerUser');
@@ -9,5 +10,6 @@ module.exports = {
     loginUser,
     registerUser,
     reloginUser,
-    updateUserInfo
+    updateUserInfo,
+    getUser
 };

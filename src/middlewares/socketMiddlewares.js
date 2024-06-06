@@ -115,7 +115,7 @@ function checkPlanAccessFromSocket(db, role = PlanRoles.VIEWER) {
             }   
         }
 
-        req.userLocalRoles = {
+        req.userPlanRoles = {
             isCreator: isUserCreator,
             isEditor: isUserEditor,
             isViewer: isUserViewer

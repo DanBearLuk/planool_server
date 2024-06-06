@@ -19,9 +19,7 @@ async function rejectRequest(req, res) {
         await updateUsers(user.id, friendId);
         emitSocketEvents(user.id, friendId, +req.query.socketId || null);
 
-        return res.status(200).json({
-            ok: true
-        });
+        return res.status(200);
     } catch (e) {
         return ers.handleInternalError(res, e);
     }

@@ -18,23 +18,23 @@ class Cache {
     }
 
     get(category, key) {
-        this._caches[category.toString()].get(key);
+        return this._caches[category.toString()].get(key);
     }
 
     set(category, key, value, ttl = undefined) {
-        this._caches[category.toString()].set(key, value, ttl);
+        return this._caches[category.toString()].set(key, value, ttl);
     }
 
     has(category, key) {
-        this._caches[category.toString()].has(key);
+        return this._caches[category.toString()].has(key);
     }
 
     del(category, key) {
-        this._caches[category.toString()].del(key);
+        return this._caches[category.toString()].del(key);
     }
 
     ttl(category, key, ttl) {
-        this._caches[category.toString()].ttl(key, ttl);
+        return this._caches[category.toString()].ttl(key, ttl);
     }
 
     on(category, eventName, callback) {

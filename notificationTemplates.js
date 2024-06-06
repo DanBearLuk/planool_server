@@ -1,3 +1,5 @@
+const Config = require("./config");
+
 const useTemplate = (template, vars) => {
     const templateCopy = structuredClone(template);
     const re = /\{.+?\}/g;
@@ -23,7 +25,7 @@ const useTemplate = (template, vars) => {
 
 const INCOMING_FRIEND_REQUEST = {
     text: 'New friend request from <a href="users/{user.id}">{user.username}</a>.',
-    icon: '{user.avatarUrl}',
+    icon: `${Config.SERVER_ADDRESS}:${Config.SERVER_PORT}/public/avatars/{user.id}`,
     buttons: [
         { type: 'accept', url: '' },
         { type: 'reject', url: '' }
@@ -32,7 +34,7 @@ const INCOMING_FRIEND_REQUEST = {
 
 const ACCEPTED_FRIEND_REQUEST = {
     text: 'Friend request to <a href="users/{user.id}">{user.username}</a> has been accepted.',
-    icon: '{user.avatarUrl}'
+    icon: `${Config.SERVER_ADDRESS}:${Config.SERVER_PORT}/public/avatars/{user.id}`
 };
 
 module.exports = {

@@ -7,16 +7,16 @@ async function sendMessage(req, res) {
     try {
         validateMessage(msg);
     } catch(e) {
-        res(400, { ok: false, message: e.message });
+        res(400, { message: e.message });
     }
 
     try {
         await db.addNewMessage(req.chat.id, req.user.id, msg);
 
-        res(200, { ok: true });
+        res(200, {});
     } catch (e) {
         console.error(e);
-        res(500, { ok: false, message: 'Internal error' });
+        res(500, { message: 'Internal error' });
     }
 }
 

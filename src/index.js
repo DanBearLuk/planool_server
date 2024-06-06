@@ -16,11 +16,11 @@ const corsOptions = {
 
 const app = express();
 const ws = wsInit(app);
-const planEditorManager = PlanEditorManager(socketManager, db);
+const planEditorManager = new PlanEditorManager(socketManager, db);
 
 app.use(cors(corsOptions));
 app.use(cookieParser());
-app.use(express.static('public', { maxAge: 31557600 }));
+app.use('/public', express.static('public', { maxAge: 31557600 }));
 
 app.use('/api/users', require('./routes/users').router);
 app.use('/api/plans', require('./routes/plans').router);

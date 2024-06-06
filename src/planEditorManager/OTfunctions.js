@@ -88,11 +88,11 @@ function Trr(reord1, reord2, ord) {
         const newReord = structuredClone(reord1);
         newReord.p += 1;
         return newReord;
-    } else if (reord1.p > reord2.p && reord1.p < reord2.prev_p) {
+    } else if (reord1.p > reord2.p && reord1.p < reord2.prevp) {
         const newReord = structuredClone(reord1);
         newReord.p += 1;
         return newReord;
-    } else if (reord1.p < reord2.p && reord1.p > reord2.prev_p) {
+    } else if (reord1.p < reord2.p && reord1.p > reord2.prevp) {
         const newReord = structuredClone(reord1);
         newReord.p -= 1;
         return newReord;

@@ -28,6 +28,7 @@ const {
     updatePlan,
     deletePlan
 } = require('../handlers/plans');
+const getPlans = require('../handlers/plans/getPlans');
 
 //router.use('/create', limit(60 * 60 * 1000, 5));
 router.use('/create', attachUser(db));
@@ -50,8 +51,13 @@ router.delete('/:planId/delete', deletePlan);
 //router.use('/:planId/view', limit(1 * 60 * 1000, 2));
 router.use('/:planId/view', attachUser(db));
 router.use('/:planId/view', attachPlan(db));
-router.use('/:planId/view', checkPlanAccess(db, PlanRoles.CREATOR));
+router.use('/:planId/view', checkPlanAccess(db, PlanRoles.VIEWER));
 router.get('/:planId/view', viewPlan);
+
+//router.use('/:planId/view', limit(1 * 60 * 1000, 2));
+router.use('/get', attachUser(db));
+router.use('/get', bodyParser.json());
+router.post('/get', getPlans);
 
 module.exports = {
     router

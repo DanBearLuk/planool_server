@@ -19,7 +19,8 @@ const {
     registerUser, 
     loginUser,
     isUsernameAvailable,
-    reloginUser
+    reloginUser,
+    getUser
 } = require('../handlers/users');
 
 //router.use('/register', limit(3 * 60 * 1000, 5));
@@ -29,6 +30,10 @@ router.post('/register', registerUser);
 //router.use('/login', limit(3 * 60 * 1000, 5));
 router.use('/login', bodyParser.json());
 router.post('/login', loginUser);
+
+//router.use('/get', limit(1 * 1000, 5));
+router.use('/get', bodyParser.json());
+router.post('/get', getUser);
 
 //router.use('/relogin', limit(30 * 1000, 5));
 router.use('/relogin', attachUser(db));

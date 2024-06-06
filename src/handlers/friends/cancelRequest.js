@@ -24,9 +24,7 @@ async function cancelRequest(req, res) {
         await updateUsers(user.id, friendId, friendRecord !== null);
         emitSocketEvents(user.id, friendId, +req.query.socketId || null);
         
-        return res.status(200).json({
-            ok: true
-        });
+        return res.status(200);
     } catch (e) {
         return ers.handleInternalError(res, e);
     }

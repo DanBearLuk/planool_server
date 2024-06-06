@@ -92,11 +92,10 @@ class Database {
             id: newId,
             username,
             password: hashedPassword,
-            avatarUrl: '',
-            firstName: '',
-            secondName: '',
-            info: '',
-            age: 0,
+            firstName: null,
+            secondName: null,
+            info: null,
+            age: null,
             chats: [],
             friends: [],
             friendRequests: {
@@ -207,8 +206,8 @@ class Database {
             id: encodedId,
             author: planInfo.author,
             title: planInfo.title,
-            startDate: null,
-            endDate: null,
+            startTime: null,
+            endTime: null,
             description: '',
             visibility: planInfo.visibility,
             isOnlyApproved: planInfo.isOnlyApproved,
@@ -218,6 +217,7 @@ class Database {
             collaborators: [],
             isFinished: false,
             type: planInfo.type,
+            venue: planInfo.venue,
             theme: 'default',
             blocks: []
         };
@@ -296,6 +296,31 @@ class Database {
         }
 
         return record;
+    }
+
+    async findPlanRecords(planIds) {
+        const toFind = [];
+        const plans = [];
+
+        for (const planId of planIds) {
+            if (this.cache.has('plans', planId)) {
+                plans.push(this.cache.get('plans', planId));
+            } else {
+                toFind.push(planId);
+            }
+        }
+
+        if (toFind.length > 0) {
+            const record = await this.plansCollection.find({
+                id: { $in: toFind }
+            });
+
+            const foundPlans = await record.toArray();
+
+            plans.push(...foundPlans);
+        }
+
+        return plans;
     }
 
     async createChat(chatInfo, chatId = '') {

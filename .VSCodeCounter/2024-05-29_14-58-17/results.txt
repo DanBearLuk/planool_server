@@ -1,0 +1,75 @@
+Date : 2024-05-29 14:58:17
+Directory : c:\planool\planool_server\src
+Total : 41 files,  2449 codes, 17 comments, 650 blanks, all 3116 lines
+
+Languages
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| JavaScript |         41 |      2,449 |         17 |        650 |      3,116 |
++------------+------------+------------+------------+------------+------------+
+
+Directories
++--------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                     | files      | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                        |         41 |      2,449 |         17 |        650 |      3,116 |
+| . (Files)                                                                |          8 |      1,039 |          1 |        265 |      1,305 |
+| handlers                                                                 |         23 |        699 |          0 |        194 |        893 |
+| handlers\chats                                                           |          3 |         69 |          0 |         21 |         90 |
+| handlers\friends                                                         |          6 |        302 |          0 |         78 |        380 |
+| handlers\notifications                                                   |          2 |         21 |          0 |          9 |         30 |
+| handlers\plans                                                           |          5 |         92 |          0 |         26 |        118 |
+| handlers\users                                                           |          7 |        215 |          0 |         60 |        275 |
+| middlewares                                                              |          2 |        234 |          0 |         62 |        296 |
+| planEditorManager                                                        |          3 |        321 |          0 |         79 |        400 |
+| routes                                                                   |          5 |        156 |         16 |         50 |        222 |
++--------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++--------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                                 | language   | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| c:\planool\planool_server\src\cache.js                                   | JavaScript |         35 |          0 |         11 |         46 |
+| c:\planool\planool_server\src\cleanup.js                                 | JavaScript |         11 |          0 |          4 |         15 |
+| c:\planool\planool_server\src\db.js                                      | JavaScript |        411 |          0 |         95 |        506 |
+| c:\planool\planool_server\src\errorHandlers.js                           | JavaScript |         38 |          0 |          7 |         45 |
+| c:\planool\planool_server\src\handlers\chats\createPrivateChat.js        | JavaScript |         45 |          0 |         13 |         58 |
+| c:\planool\planool_server\src\handlers\chats\index.js                    | JavaScript |          6 |          0 |          2 |          8 |
+| c:\planool\planool_server\src\handlers\chats\sendMessage.js              | JavaScript |         18 |          0 |          6 |         24 |
+| c:\planool\planool_server\src\handlers\friends\acceptRequest.js          | JavaScript |         69 |          0 |         16 |         85 |
+| c:\planool\planool_server\src\handlers\friends\cancelRequest.js          | JavaScript |         60 |          0 |         17 |         77 |
+| c:\planool\planool_server\src\handlers\friends\index.js                  | JavaScript |         12 |          0 |          2 |         14 |
+| c:\planool\planool_server\src\handlers\friends\rejectRequest.js          | JavaScript |         58 |          0 |         15 |         73 |
+| c:\planool\planool_server\src\handlers\friends\removeFriend.js           | JavaScript |         43 |          0 |         13 |         56 |
+| c:\planool\planool_server\src\handlers\friends\sendRequest.js            | JavaScript |         60 |          0 |         15 |         75 |
+| c:\planool\planool_server\src\handlers\notifications\hideNotification.js | JavaScript |         17 |          0 |          7 |         24 |
+| c:\planool\planool_server\src\handlers\notifications\index.js            | JavaScript |          4 |          0 |          2 |          6 |
+| c:\planool\planool_server\src\handlers\plans\createPlan.js               | JavaScript |         26 |          0 |          7 |         33 |
+| c:\planool\planool_server\src\handlers\plans\deletePlan.js               | JavaScript |         11 |          0 |          4 |         15 |
+| c:\planool\planool_server\src\handlers\plans\index.js                    | JavaScript |         10 |          0 |          2 |         12 |
+| c:\planool\planool_server\src\handlers\plans\updatePlan.js               | JavaScript |         23 |          0 |          7 |         30 |
+| c:\planool\planool_server\src\handlers\plans\viewPlan.js                 | JavaScript |         22 |          0 |          6 |         28 |
+| c:\planool\planool_server\src\handlers\users\getUser.js                  | JavaScript |         38 |          0 |          8 |         46 |
+| c:\planool\planool_server\src\handlers\users\index.js                    | JavaScript |         14 |          0 |          2 |         16 |
+| c:\planool\planool_server\src\handlers\users\isUsernameAvailable.js      | JavaScript |         23 |          0 |          7 |         30 |
+| c:\planool\planool_server\src\handlers\users\loginUser.js                | JavaScript |         47 |          0 |         14 |         61 |
+| c:\planool\planool_server\src\handlers\users\registerUser.js             | JavaScript |         29 |          0 |         10 |         39 |
+| c:\planool\planool_server\src\handlers\users\reloginUser.js              | JavaScript |         18 |          0 |          6 |         24 |
+| c:\planool\planool_server\src\handlers\users\updateUserInfo.js           | JavaScript |         46 |          0 |         13 |         59 |
+| c:\planool\planool_server\src\index.js                                   | JavaScript |         31 |          0 |         10 |         41 |
+| c:\planool\planool_server\src\jwt.js                                     | JavaScript |         23 |          0 |          8 |         31 |
+| c:\planool\planool_server\src\middlewares\httpMiddlewares.js             | JavaScript |        120 |          0 |         33 |        153 |
+| c:\planool\planool_server\src\middlewares\socketMiddlewares.js           | JavaScript |        114 |          0 |         29 |        143 |
+| c:\planool\planool_server\src\planEditorManager\OTfunctions.js           | JavaScript |        103 |          0 |         13 |        116 |
+| c:\planool\planool_server\src\planEditorManager\index.js                 | JavaScript |          2 |          0 |          2 |          4 |
+| c:\planool\planool_server\src\planEditorManager\manager.js               | JavaScript |        216 |          0 |         64 |        280 |
+| c:\planool\planool_server\src\routes\chats.js                            | JavaScript |         33 |          1 |         10 |         44 |
+| c:\planool\planool_server\src\routes\friends.js                          | JavaScript |         31 |          5 |         11 |         47 |
+| c:\planool\planool_server\src\routes\notifications.js                    | JavaScript |         12 |          0 |          6 |         18 |
+| c:\planool\planool_server\src\routes\plans.js                            | JavaScript |         44 |          4 |         11 |         59 |
+| c:\planool\planool_server\src\routes\users.js                            | JavaScript |         36 |          6 |         12 |         54 |
+| c:\planool\planool_server\src\socketManager.js                           | JavaScript |        302 |          1 |         85 |        388 |
+| c:\planool\planool_server\src\validate.js                                | JavaScript |        188 |          0 |         45 |        233 |
+| Total                                                                    |            |      2,449 |         17 |        650 |      3,116 |
++--------------------------------------------------------------------------+------------+------------+------------+------------+------------+

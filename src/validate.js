@@ -193,9 +193,9 @@ function validatePlanInfo(planInfo, checkRequired = false) {
             check =
                 venue && 
                 venue.country &&
-                venue.place &&
+                venue.city &&
                 typeof(venue.country) === 'string' &&
-                typeof(venue.place) === 'string';
+                typeof(venue.city) === 'string';
         }
         
         if (!check) {

@@ -170,25 +170,21 @@ class SocketManager {
                     throw new Error('Invalid request');
                 }
             } catch (e) {
-                socketInfo.socket.send(JSON.stringify({ 
+                return socketInfo.socket.send(JSON.stringify({ 
                     route: 'error', 
                     data: 'Received invalid request'
                 }));
-
-                return;
             }
 
             if (request.route === 'reply') {
-                this._handleReply(socketInfo, request.data);
-                
-                return;
+                return this._handleReply(socketInfo, request.data);
+            } else if (request.route === 'error') {
+                return console.error(request.data);
             } else if (!Number.isInteger(request.messageId)) {
-                socketInfo.socket.send(JSON.stringify({ 
+                return socketInfo.socket.send(JSON.stringify({ 
                     route: 'error', 
                     data: 'Invalid messageId'
                 }));
-
-                return;
             }
 
             const { isDuplicate } = this._reply(socketInfo, request.messageId);

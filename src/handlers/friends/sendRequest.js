@@ -27,9 +27,7 @@ async function sendRequest(req, res) {
         await updateUsers(user.id, friendId, notification.id);
         emitSocketEvents(user, friendId, +req.query.socketId || null);
 
-        return res.status(200).json({
-            ok: true
-        });
+        return res.status(200);
     } catch (e) {
         return ers.handleInternalError(res, e);
     }
@@ -64,8 +62,7 @@ function emitSocketEvents(user, friendId, userSocketId) {
     socketManager.emitToClients(friendId, 'sentFriendRequest', {
         type: 'inbox',
         userId: user.id,
-        username: user.username,
-        avatarUrl: user.avatarUrl
+        username: user.username
     });
 
     socketManager.emitToClients(user.id, 'sentFriendRequest', {
